@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
+    />
+    <meta
+      name="description"
+      content="BunkBuddy - Smart Attendance Manager. Track your class attendance and never miss your minimum percentage requirement. Free, private, and works offline."
+    />
+    <meta
+      name="keywords"
+      content="attendance tracker, class attendance, student app, medical student, attendance calculator"
+    />
+    <meta name="author" content="B.O.Y." />
+    <meta name="theme-color" content="#6366f1" />
+
+    <!-- Mobile Web App -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="BunkBuddy" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json" />
+
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/png" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png" />
+
+    <title>B.O.Y.'s BunkBuddy - Smart Attendance Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <h1 class="app-title">B.O.Y.'s BunkBuddy</h1>
+          <p class="app-subtitle">The Smart Attendance Manager</p>
+        </div>
+      </header>
+
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button class="tab-button active" data-tab="dashboard">
+          <span class="tab-icon">📊</span> Dashboard
+        </button>
+        <button class="tab-button" data-tab="tracker">
+          <span class="tab-icon">📅</span> Tracker
+        </button>
+        <button class="tab-button" data-tab="settings">
+          <span class="tab-icon">⚙️</span> Settings
+        </button>
+      </div>
+
+      <!-- Dashboard Tab -->
+      <div class="tab-content active" id="dashboard">
+        <div class="dashboard-container">
+          <!-- Overall Attendance Card -->
+          <div class="card attendance-card">
+            <h2>Overall Attendance</h2>
+            <div class="attendance-percentage">
+              <span id="attendancePercentage" class="percentage-value">0%</span>
+              <p id="attendanceSessionsInfo" class="sessions-info">
+                0 / 0 sessions
+              </p>
+            </div>
+          </div>
+
+          <!-- Classes Needed Card -->
+          <div class="card classes-needed-card">
+            <h2>Classes Needed</h2>
+            <div class="classes-stats">
+              <div class="stat">
+                <p class="stat-label">To reach your target:</p>
+                <p id="classesForTarget" class="stat-value">0</p>
+              </div>
+              <div class="stat">
+                <p class="stat-label">For 75% threshold:</p>
+                <p id="classesFor75" class="stat-value">0</p>
+              </div>
+              <div class="stat">
+                <p class="stat-label">For 80% threshold:</p>
+                <p id="classesFor80" class="stat-value">0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subject-wise Attendance -->
+          <div class="card subject-card">
+            <h2>Subject-wise Attendance</h2>
+            <div id="subjectWiseAttendance" class="subject-list">
+              <p class="empty-message">
+                No active rotations. Set up in Settings tab.
+              </p>
+            </div>
+          </div>
+
+          <!-- Weekly Trends Chart -->
+          <div class="card chart-card">
+            <h2>Weekly Attendance Trends</h2>
+            <div class="chart-container">
+              <canvas id="weeklyTrendsChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Export Button -->
+          <div class="card action-card">
+            <button id="exportReportBtn" class="btn btn-primary">
+              📥 Export Report
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tracker Tab -->
+      <div class="tab-content" id="tracker">
+        <div class="tracker-container">
+          <!-- Month Selector -->
+          <div class="month-selector">
+            <button id="prevMonthBtn" class="btn btn-secondary">
+              ← Previous
+            </button>
+            <h2 id="currentMonth" class="current-month">December 2025</h2>
+            <button id="nextMonthBtn" class="btn btn-secondary">Next →</button>
+          </div>
+
+          <!-- Calendar Grid -->
+          <div class="calendar-container">
+            <div class="weekdays-header">
+              <div class="weekday">Sun</div>
+              <div class="weekday">Mon</div>
+              <div class="weekday">Tue</div>
+              <div class="weekday">Wed</div>
+              <div class="weekday">Thu</div>
+              <div class="weekday">Fri</div>
+              <div class="weekday">Sat</div>
+            </div>
+            <div id="calendarGrid" class="calendar-grid">
+              <!-- Generated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Sessions List -->
+          <div class="sessions-list-container">
+            <h3>Sessions This Month</h3>
+            <div id="sessionsList" class="sessions-list">
+              <p class="empty-message">No sessions scheduled for this month.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="tab-content" id="settings">
+        <div class="settings-container">
+          <!-- Class Schedule (Rotations) -->
+          <div class="settings-section">
+            <h2>Class Schedule (Rotations)</h2>
+            <div id="rotationsList" class="rotations-list">
+              <!-- Generated by JavaScript -->
+            </div>
+            <button id="addRotationBtn" class="btn btn-secondary">
+              + Add Rotation
+            </button>
+          </div>
+
+          <!-- Form for new rotation (hidden by default) -->
+          <div
+            id="rotationFormContainer"
+            class="settings-section"
+            style="display: none"
+          >
+            <h3>Add New Rotation</h3>
+            <div class="form-group">
+              <label for="rotationSubject">Subject Name:</label>
+              <input
+                type="text"
+                id="rotationSubject"
+                placeholder="e.g., Anatomy"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="rotationStartDate">Start Date:</label>
+              <input type="date" id="rotationStartDate" required />
+            </div>
+            <div class="form-group">
+              <label for="rotationEndDate">End Date:</label>
+              <input type="date" id="rotationEndDate" required />
+            </div>
+            <button id="saveRotationBtn" class="btn btn-primary">
+              Save Rotation
+            </button>
+            <button id="cancelRotationBtn" class="btn btn-secondary">
+              Cancel
+            </button>
+          </div>
+
+          <!-- Minimum Attendance Target -->
+          <div class="settings-section">
+            <h2>Minimum Attendance Target</h2>
+            <div class="form-group">
+              <label for="targetPercentage">Target Percentage:</label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  id="targetPercentage"
+                  min="1"
+                  max="100"
+                  value="80"
+                  required
+                />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Working Days per Week -->
+          <div class="settings-section">
+            <h2>Compulsory Working Days per Week</h2>
+            <div class="form-group">
+              <label for="workingDaysPerWeek">Days per Week:</label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  id="workingDaysPerWeek"
+                  min="1"
+                  max="7"
+                  value="6"
+                  required
+                />
+                <span>days</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scheduled Holidays -->
+          <div class="settings-section">
+            <h2>Scheduled Holidays</h2>
+            <div id="holidaysList" class="holidays-list">
+              <!-- Generated by JavaScript -->
+            </div>
+            <div class="form-group">
+              <label for="holidayDate">Add Holiday:</label>
+              <div class="input-group">
+                <input type="date" id="holidayDate" required />
+                <button id="addHolidayBtn" class="btn btn-secondary">
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="settings-section">
+            <h2>Notifications</h2>
+            <div class="form-group checkbox-group">
+              <input type="checkbox" id="enableNotifications" />
+              <label for="enableNotifications"
+                >Enable browser notifications for upcoming classes</label
+              >
+            </div>
+          </div>
+
+          <!-- Data Management -->
+          <div class="settings-section data-management">
+            <h2>Data Management</h2>
+            <button id="saveSettingsBtn" class="btn btn-primary">
+              💾 Save Settings
+            </button>
+            <button id="exportDataBtn" class="btn btn-secondary">
+              📤 Export Data (JSON)
+            </button>
+            <button id="importDataBtn" class="btn btn-secondary">
+              📥 Import Data (JSON)
+            </button>
+            <input
+              type="file"
+              id="importFileInput"
+              accept=".json"
+              style="display: none"
+            />
+            <button id="resetDataBtn" class="btn btn-danger">
+              🔄 Reset All Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <h2 id="confirmTitle">Confirm Action</h2>
+        <p id="confirmMessage">Are you sure?</p>
+        <div class="modal-buttons">
+          <button id="confirmYesBtn" class="btn btn-danger">
+            Yes, Confirm
+          </button>
+          <button id="confirmNoBtn" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="success-message" style="display: none">
+      <span id="successText">Success!</span>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log("ServiceWorker registered:", registration.scope);
+            })
+            .catch((err) => {
+              console.log("ServiceWorker registration failed:", err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "BunkBuddy - Smart Attendance Manager",
+  "short_name": "BunkBuddy",
+  "description": "Track your class attendance and never miss your minimum percentage requirement",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "utilities"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 700'%3E%3Crect fill='%230f172a' width='400' height='700'/%3E%3Ctext x='200' y='350' font-size='24' text-anchor='middle' fill='white' font-family='Arial'%3EBunkBuddy Dashboard%3C/text%3E%3C/svg%3E",
+      "sizes": "400x700",
+      "type": "image/svg+xml",
+      "label": "Dashboard View"
+    }
+  ]
+}
