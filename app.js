@@ -897,35 +897,73 @@ function showSuccessMessage(message) {
 function saveDataToStorage() {
   saveDataToStorageAsync().catch(err => {
     console.error("❌ Background save failed:", err);
+    // Fallback to localStorage if IndexedDB fails
+    try {
+      localStorage.setItem("bunkbuddy_state", JSON.stringify(appState));
+      console.log("⚠️ Saved to localStorage as fallback");
+    } catch (e) {
+      console.error("❌ localStorage fallback also failed:", e);
+    }
   });
 }
 
 async function saveDataToStorageAsync() {
   try {
     const dataToSave = JSON.stringify(appState);
+    
+    // Save to IndexedDB
     await storage.saveData("bunkbuddy_state", dataToSave);
     
-    console.log("✅ Data saved to IndexedDB:", {
+    // Verify it was saved by reading it back
+    const verification = await storage.loadData("bunkbuddy_state");
+    if (!verification) {
+      throw new Error("Verification failed - data not found after save");
+    }
+    
+    console.log("✅ Data saved AND verified in IndexedDB:", {
       rotations: appState.rotations.length,
       attendanceRecords: Object.keys(appState.attendanceRecords).length,
       holidays: appState.holidays.length,
       dataSize: (dataToSave.length / 1024).toFixed(2) + " KB",
+      timestamp: new Date().toISOString()
     });
+    
+    // Also save to localStorage as backup
+    localStorage.setItem("bunkbuddy_state", dataToSave);
+    
   } catch (error) {
     console.error("❌ Error saving to IndexedDB:", error);
-    // Fallback to localStorage silently
+    // Fallback to localStorage
     try {
-      localStorage.setItem("bunkbuddy_state_backup", JSON.stringify(appState));
-      console.log("⚠️ Saved to localStorage backup");
+      localStorage.setItem("bunkbuddy_state", JSON.stringify(appState));
+      console.log("⚠️ Saved to localStorage backup due to IndexedDB error");
     } catch (e) {
       console.error("❌ All storage methods failed:", e);
+      throw e;
     }
   }
 }
 
 async function loadDataFromStorage() {
   try {
-    const savedState = await storage.loadData("bunkbuddy_state");
+    console.log("🔍 Loading data from storage...");
+    
+    // Try IndexedDB first
+    let savedState = await storage.loadData("bunkbuddy_state");
+    let source = "IndexedDB";
+    
+    // If not in IndexedDB, try localStorage
+    if (!savedState) {
+      console.log("⚠️ No data in IndexedDB, trying localStorage...");
+      const localData = localStorage.getItem("bunkbuddy_state");
+      if (localData) {
+        savedState = localData;
+        source = "localStorage";
+        // Migrate to IndexedDB
+        await storage.saveData("bunkbuddy_state", localData);
+        console.log("✅ Migrated data from localStorage to IndexedDB");
+      }
+    }
     
     if (savedState) {
       const parsed = JSON.parse(savedState);
@@ -936,43 +974,36 @@ async function loadDataFromStorage() {
         currentYear: new Date().getFullYear(),
         weeklyTrendsChart: null,
       };
-      console.log("✅ Data loaded from IndexedDB:", {
+      console.log(`✅ Data loaded from ${source}:`, {
         rotations: appState.rotations.length,
         attendanceRecords: Object.keys(appState.attendanceRecords).length,
         holidays: appState.holidays.length,
         timestamp: new Date().toISOString(),
       });
     } else {
-      // Try localStorage backup
-      const backupState = localStorage.getItem("bunkbuddy_state_backup");
-      if (backupState) {
-        const parsed = JSON.parse(backupState);
-        appState = { ...appState, ...parsed };
-        console.log("✅ Data restored from localStorage backup");
-        // Save to IndexedDB
-        await saveDataToStorageAsync();
-      } else {
-        console.log("ℹ️ No saved data found - First time user");
-        // Create default rotation for first-time users
-        appState.rotations = [
-          {
-            id: generateId(),
-            subject: "Sample Rotation",
-            startDate: formatDateToYYYYMMDD(new Date()),
-            endDate: formatDateToYYYYMMDD(addDays(new Date(), 30)),
-          },
-        ];
-        appState.targetPercentage = 80;
-        appState.workingDaysPerWeek = 6;
-        appState.enableNotifications = false;
-        appState.holidays = [];
-        appState.attendanceRecords = {};
-        await saveDataToStorageAsync();
-      }
+      console.log("ℹ️ No saved data found - Creating default data");
+      // Create default rotation for first-time users
+      appState.rotations = [
+        {
+          id: generateId(),
+          subject: "Sample Rotation",
+          startDate: formatDateToYYYYMMDD(new Date()),
+          endDate: formatDateToYYYYMMDD(addDays(new Date(), 30)),
+        },
+      ];
+      appState.targetPercentage = 80;
+      appState.workingDaysPerWeek = 6;
+      appState.enableNotifications = false;
+      appState.holidays = [];
+      appState.attendanceRecords = {};
+      
+      // Save the default data
+      await saveDataToStorageAsync();
+      console.log("✅ Default data created and saved");
     }
   } catch (error) {
     console.error("❌ Error loading from storage:", error);
-    console.log("Starting fresh with default data");
+    console.log("Starting with empty state");
   }
 }
 
