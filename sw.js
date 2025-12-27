@@ -1,7 +1,7 @@
 // BunkBuddy Service Worker
-// Provides offline functionality
+// Provides offline functionality with localStorage support
 
-const CACHE_NAME = "bunkbuddy-v1";
+const CACHE_NAME = "bunkbuddy-v2"; // Increment version to clear old cache
 const urlsToCache = [
   "/",
   "/index.html",
@@ -30,17 +30,35 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - Network first for HTML/JS, cache first for assets
 self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Cache hit - return response
-      if (response) {
-        return response;
-      }
-      return fetch(event.request);
-    })
-  );
+  const url = new URL(event.request.url);
+  
+  // Network-first strategy for HTML and JavaScript files
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone and cache the response
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request);
+        })
+    );
+  } else {
+    // Cache-first strategy for images, CSS, and other assets
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
+    );
+  }
 });
 
 // Activate event - clean up old caches

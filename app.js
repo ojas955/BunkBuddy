@@ -882,20 +882,43 @@ function showSuccessMessage(message) {
 // ============================================================================
 
 function saveDataToStorage() {
-  localStorage.setItem("bunkbuddy_state", JSON.stringify(appState));
+  try {
+    const dataToSave = JSON.stringify(appState);
+    localStorage.setItem("bunkbuddy_state", dataToSave);
+    console.log("✅ Data saved to localStorage:", {
+      rotations: appState.rotations.length,
+      attendanceRecords: Object.keys(appState.attendanceRecords).length,
+      holidays: appState.holidays.length,
+    });
+  } catch (error) {
+    console.error("❌ Error saving to localStorage:", error);
+    alert("Failed to save data. Please check if localStorage is enabled in your browser.");
+  }
 }
 
 function loadDataFromStorage() {
-  const savedState = localStorage.getItem("bunkbuddy_state");
-  if (savedState) {
-    const parsed = JSON.parse(savedState);
-    appState = {
-      ...appState,
-      ...parsed,
-      currentMonth: new Date().getMonth(), // Always use current month on load
-      currentYear: new Date().getFullYear(),
-      weeklyTrendsChart: null, // Charts can't be serialized
-    };
+  try {
+    const savedState = localStorage.getItem("bunkbuddy_state");
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      appState = {
+        ...appState,
+        ...parsed,
+        currentMonth: new Date().getMonth(), // Always use current month on load
+        currentYear: new Date().getFullYear(),
+        weeklyTrendsChart: null, // Charts can't be serialized
+      };
+      console.log("✅ Data loaded from localStorage:", {
+        rotations: appState.rotations.length,
+        attendanceRecords: Object.keys(appState.attendanceRecords).length,
+        holidays: appState.holidays.length,
+      });
+    } else {
+      console.log("ℹ️ No saved data found in localStorage");
+    }
+  } catch (error) {
+    console.error("❌ Error loading from localStorage:", error);
+    alert("Failed to load saved data. Your data might be corrupted.");
   }
 }
 
