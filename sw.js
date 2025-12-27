@@ -1,13 +1,14 @@
 // BunkBuddy Service Worker
-// Provides offline functionality with localStorage support
+// Provides offline functionality with IndexedDB support
 
-const CACHE_NAME = "bunkbuddy-v2"; // Increment version to clear old cache
+const CACHE_NAME = "bunkbuddy-v3"; // Increment version to clear old cache
 const urlsToCache = [
   "/",
   "/index.html",
   "/styles.css",
   "/app.js",
   "/utils.js",
+  "/storage.js",
   "/icon-192.png",
   "/icon-512.png",
   "/icon-180.png",
