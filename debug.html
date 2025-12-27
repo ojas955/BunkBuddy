@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BunkBuddy - Storage Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #0f172a; color: #fff; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        pre { background: #1e293b; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>BunkBuddy Storage Debugger</h1>
+    <button onclick="testStorage()">Test Storage</button>
+    <button onclick="viewData()">View Saved Data</button>
+    <button onclick="clearAll()">Clear All Data</button>
+    <div id="output"></div>
+
+    <script src="storage.js"></script>
+    <script>
+        const output = document.getElementById('output');
+
+        async function log(msg, type = 'info') {
+            const color = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            output.innerHTML += `<div class="${color}">${new Date().toLocaleTimeString()}: ${msg}</div>`;
+            console.log(msg);
+        }
+
+        async function testStorage() {
+            output.innerHTML = '<h2>Testing Storage...</h2>';
+            
+            try {
+                // Test IndexedDB
+                await log('Initializing IndexedDB...');
+                await storage.init();
+                await log('✅ IndexedDB initialized', 'success');
+
+                // Test write
+                const testData = { test: 'data', time: Date.now(), rotations: ['test1', 'test2'] };
+                await log('Writing test data...');
+                await storage.saveData('test_key', JSON.stringify(testData));
+                await log('✅ Data written', 'success');
+
+                // Test read
+                await log('Reading test data...');
+                const result = await storage.loadData('test_key');
+                if (result) {
+                    await log('✅ Data read successfully: ' + result, 'success');
+                } else {
+                    await log('❌ No data found after write!', 'error');
+                }
+
+                // Test localStorage
+                await log('Testing localStorage...');
+                localStorage.setItem('test', 'works');
+                const lsTest = localStorage.getItem('test');
+                await log('✅ localStorage: ' + lsTest, 'success');
+
+                await log('All tests passed! ✅', 'success');
+            } catch (error) {
+                await log('❌ Test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function viewData() {
+            output.innerHTML = '<h2>Saved Data:</h2>';
+            
+            try {
+                await storage.init();
+                
+                // Check IndexedDB
+                const idbData = await storage.loadData('bunkbuddy_state');
+                if (idbData) {
+                    await log('<strong>IndexedDB Data:</strong><pre>' + JSON.stringify(JSON.parse(idbData), null, 2) + '</pre>', 'success');
+                } else {
+                    await log('No data in IndexedDB', 'error');
+                }
+
+                // Check localStorage
+                const lsData = localStorage.getItem('bunkbuddy_state');
+                if (lsData) {
+                    await log('<strong>localStorage Data:</strong><pre>' + JSON.stringify(JSON.parse(lsData), null, 2) + '</pre>', 'success');
+                } else {
+                    await log('No data in localStorage', 'error');
+                }
+            } catch (error) {
+                await log('Error viewing data: ' + error.message, 'error');
+            }
+        }
+
+        async function clearAll() {
+            if (confirm('Clear all saved data?')) {
+                try {
+                    await storage.init();
+                    await storage.clearData('bunkbuddy_state');
+                    localStorage.clear();
+                    await log('✅ All data cleared', 'success');
+                } catch (error) {
+                    await log('Error clearing data: ' + error.message, 'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
