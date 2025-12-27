@@ -31,7 +31,44 @@ document.addEventListener("DOMContentLoaded", function () {
   render();
 });
 
+// Auto-save before page unload/close
+window.addEventListener("beforeunload", function () {
+  saveDataToStorage();
+  console.log("💾 Auto-saved before closing");
+});
+
+// Auto-save when page becomes hidden (mobile app switching)
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) {
+    saveDataToStorage();
+    console.log("💾 Auto-saved on visibility change");
+  }
+});
+
+// Auto-save periodically (every 30 seconds as backup)
+setInterval(() => {
+  saveDataToStorage();
+  console.log("💾 Periodic auto-save");
+}, 30000);
+
 function initializeApp() {
+  // Test localStorage availability
+  try {
+    const testKey = "_bunkbuddy_test_";
+    localStorage.setItem(testKey, "test");
+    localStorage.removeItem(testKey);
+    console.log("✅ localStorage is available and working");
+  } catch (e) {
+    alert("⚠️ WARNING: localStorage is not available!\n\n" +
+          "This app requires localStorage to save your data.\n\n" +
+          "Possible causes:\n" +
+          "• You're in Private/Incognito mode\n" +
+          "• Cookies are disabled\n" +
+          "• Storage quota exceeded\n\n" +
+          "Please switch to normal browsing mode!");
+    console.error("❌ localStorage not available:", e);
+  }
+  
   // Initialize with default data if nothing exists
   const savedState = localStorage.getItem("bunkbuddy_state");
   if (!savedState) {
@@ -885,14 +922,25 @@ function saveDataToStorage() {
   try {
     const dataToSave = JSON.stringify(appState);
     localStorage.setItem("bunkbuddy_state", dataToSave);
+    
+    // Verify it was saved
+    const verification = localStorage.getItem("bunkbuddy_state");
+    if (!verification) {
+      throw new Error("localStorage verification failed");
+    }
+    
     console.log("✅ Data saved to localStorage:", {
       rotations: appState.rotations.length,
       attendanceRecords: Object.keys(appState.attendanceRecords).length,
       holidays: appState.holidays.length,
+      dataSize: (dataToSave.length / 1024).toFixed(2) + " KB",
     });
+    
+    // Show visual confirmation
+    showSuccessMessage("Data saved automatically");
   } catch (error) {
     console.error("❌ Error saving to localStorage:", error);
-    alert("Failed to save data. Please check if localStorage is enabled in your browser.");
+    alert("⚠️ CRITICAL: Failed to save data!\n\nYour browser might be in Private/Incognito mode or localStorage is disabled.\n\nPlease use normal browsing mode and ensure cookies are enabled.");
   }
 }
 
@@ -912,9 +960,10 @@ function loadDataFromStorage() {
         rotations: appState.rotations.length,
         attendanceRecords: Object.keys(appState.attendanceRecords).length,
         holidays: appState.holidays.length,
+        timestamp: new Date().toISOString(),
       });
     } else {
-      console.log("ℹ️ No saved data found in localStorage");
+      console.log("ℹ️ No saved data found in localStorage - First time user");
     }
   } catch (error) {
     console.error("❌ Error loading from localStorage:", error);
