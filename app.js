@@ -909,10 +909,23 @@ function saveDataToStorage() {
 
 async function saveDataToStorageAsync() {
   try {
-    const dataToSave = JSON.stringify(appState);
+    // Create a clean copy of appState without circular references
+    const dataToSave = {
+      rotations: appState.rotations,
+      attendanceRecords: appState.attendanceRecords,
+      holidays: appState.holidays,
+      targetPercentage: appState.targetPercentage,
+      workingDaysPerWeek: appState.workingDaysPerWeek,
+      enableNotifications: appState.enableNotifications,
+      sessions: appState.sessions,
+      // Exclude: weeklyTrendsChart (Chart.js object - circular reference)
+      // Exclude: currentMonth, currentYear (always use current on load)
+    };
+    
+    const dataString = JSON.stringify(dataToSave);
     
     // Save to IndexedDB
-    await storage.saveData("bunkbuddy_state", dataToSave);
+    await storage.saveData("bunkbuddy_state", dataString);
     
     // Verify it was saved by reading it back
     const verification = await storage.loadData("bunkbuddy_state");
@@ -924,18 +937,27 @@ async function saveDataToStorageAsync() {
       rotations: appState.rotations.length,
       attendanceRecords: Object.keys(appState.attendanceRecords).length,
       holidays: appState.holidays.length,
-      dataSize: (dataToSave.length / 1024).toFixed(2) + " KB",
+      dataSize: (dataString.length / 1024).toFixed(2) + " KB",
       timestamp: new Date().toISOString()
     });
     
     // Also save to localStorage as backup
-    localStorage.setItem("bunkbuddy_state", dataToSave);
+    localStorage.setItem("bunkbuddy_state", dataString);
     
   } catch (error) {
     console.error("❌ Error saving to IndexedDB:", error);
     // Fallback to localStorage
     try {
-      localStorage.setItem("bunkbuddy_state", JSON.stringify(appState));
+      const dataToSave = {
+        rotations: appState.rotations,
+        attendanceRecords: appState.attendanceRecords,
+        holidays: appState.holidays,
+        targetPercentage: appState.targetPercentage,
+        workingDaysPerWeek: appState.workingDaysPerWeek,
+        enableNotifications: appState.enableNotifications,
+        sessions: appState.sessions,
+      };
+      localStorage.setItem("bunkbuddy_state", JSON.stringify(dataToSave));
       console.log("⚠️ Saved to localStorage backup due to IndexedDB error");
     } catch (e) {
       console.error("❌ All storage methods failed:", e);
