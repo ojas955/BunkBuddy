@@ -893,7 +893,14 @@ function showSuccessMessage(message) {
 // Data Persistence
 // ============================================================================
 
-async function saveDataToStorage() {
+// Synchronous wrapper for saveDataToStorage (fire and forget)
+function saveDataToStorage() {
+  saveDataToStorageAsync().catch(err => {
+    console.error("❌ Background save failed:", err);
+  });
+}
+
+async function saveDataToStorageAsync() {
   try {
     const dataToSave = JSON.stringify(appState);
     await storage.saveData("bunkbuddy_state", dataToSave);
@@ -904,17 +911,14 @@ async function saveDataToStorage() {
       holidays: appState.holidays.length,
       dataSize: (dataToSave.length / 1024).toFixed(2) + " KB",
     });
-    
-    // Show visual confirmation
-    showSuccessMessage("Data saved successfully");
   } catch (error) {
     console.error("❌ Error saving to IndexedDB:", error);
-    // Fallback to localStorage if IndexedDB fails
+    // Fallback to localStorage silently
     try {
       localStorage.setItem("bunkbuddy_state_backup", JSON.stringify(appState));
       console.log("⚠️ Saved to localStorage backup");
     } catch (e) {
-      alert("⚠️ CRITICAL: Failed to save data!\n\nPlease contact support.");
+      console.error("❌ All storage methods failed:", e);
     }
   }
 }
@@ -946,7 +950,7 @@ async function loadDataFromStorage() {
         appState = { ...appState, ...parsed };
         console.log("✅ Data restored from localStorage backup");
         // Save to IndexedDB
-        await saveDataToStorage();
+        await saveDataToStorageAsync();
       } else {
         console.log("ℹ️ No saved data found - First time user");
         // Create default rotation for first-time users
@@ -963,12 +967,12 @@ async function loadDataFromStorage() {
         appState.enableNotifications = false;
         appState.holidays = [];
         appState.attendanceRecords = {};
-        await saveDataToStorage();
+        await saveDataToStorageAsync();
       }
     }
   } catch (error) {
     console.error("❌ Error loading from storage:", error);
-    alert("Failed to load saved data. Starting fresh.");
+    console.log("Starting fresh with default data");
   }
 }
 
